@@ -14,7 +14,7 @@ namespace PasswordExpire
         public string Mobile { get; set; }
         public override string ToString ( )
         {
-            return String.Format("Guid: {0}, Name: {1} {2}, Phone: {3}", guid, FirstName, LastName, Mobile);
+            return String.Format("Date: {4}, Guid: {0}, Name: {1} {2}, Phone: {3}", guid, FirstName, LastName, Mobile, DateTime.Now.ToString("yyyy-MM-dd") );
         }
     }
 }

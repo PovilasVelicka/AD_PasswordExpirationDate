@@ -27,7 +27,7 @@ namespace PasswordExpire
 
             SendMessage sendMethods = PrintConsoleMessage;
             sendMethods += SendSmsMessage;
-            sendMethods += SaveLogFile;
+            
 
             adUserService.SendMessages(sendMethods);
 
@@ -40,14 +40,16 @@ namespace PasswordExpire
 
         static async void SendSmsMessage (User user)
         {
-            await _smsService.SendSmsAsync(user.Mobile, "Sveiki, iki jūsų paskyros užblokavimo liko 4 dienos. Kuo skubiau pasikeiskit slaptažodį.","CRAMO");
+            var response  = await _smsService.SendSmsAsync(user.Mobile, "Sveiki, iki jūsų paskyros užblokavimo liko 4 dienos. Kuo skubiau pasikeiskit slaptažodį.","CRAMO");
+            SaveLogFile(user.ToString());
+            SaveLogFile(string.Format("------ Message sent: {0}{1}",response.IsSucess,", error message: " + response.Message));
         }
 
-        static async void SaveLogFile (User user)
+        static async void SaveLogFile (string stringLine)
         {
             using (var file = new StreamWriter(_logFile, append: true))
             {
-                await file.WriteAsync(DateTime.Now.ToString("yyyy-MM-dd") + user + "\n");
+                await file.WriteLineAsync( stringLine);
             }
         }
     }
