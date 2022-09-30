@@ -12,6 +12,7 @@ namespace PasswordExpire
         private readonly PrincipalContext _context;
         private readonly string _groupName;
 
+
         public AdUserService (string groupName)
         {
             _groupName = groupName;
