@@ -25,8 +25,9 @@ namespace PasswordExpire
             {
                 var user = GetUser(groupMember.SamAccountName);
                 var expireDate = user.LastPasswordSet.GetValueOrDefault(DateTime.Now).AddMonths(2).AddDays(10).Date;
+              
 
-                if (expireDate == DateTime.Now.Date)
+                if (expireDate == DateTime.Now.Date && user.Enabled == true)
                 {
                     if (methods != null)
                     {
@@ -34,6 +35,7 @@ namespace PasswordExpire
                             if (de != null)
                             {
                                 var mobile = de.Properties["mobile"].Value as string;
+
                                 if (!string.IsNullOrWhiteSpace(mobile))
                                 {
                                     methods.Invoke(new User

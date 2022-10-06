@@ -1,25 +1,28 @@
-﻿using BaltnetaSmsApi;
-using System.Configuration;
+﻿
+using BaltnetaSmsApi;
 using System;
+using System.Configuration;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace PasswordExpire
 {
+
     internal class Program
     {
         static readonly string _logFile;
         const string LOG_FILE_NAME = "password_expiration.log";
-        private static readonly SmsService _smsService ;
+        private static readonly SmsService _smsService;
+        private static readonly string _smsText;
         static Program ( )
         {
             _logFile = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly( ).Location);
             if (!Directory.Exists(_logFile)) Directory.CreateDirectory(_logFile);
-            _logFile += LOG_FILE_NAME;
+            _logFile += Path.DirectorySeparatorChar + LOG_FILE_NAME;
+            _smsText = ConfigurationManager.AppSettings["smsMessage"];
             _smsService = new SmsService(
                 apiKey: ConfigurationManager.AppSettings["apiKey"],
                 login: ConfigurationManager.AppSettings["login"]);
-                           
+
         }
         static void Main (string[ ] args)
         {
@@ -27,7 +30,7 @@ namespace PasswordExpire
 
             SendMessage sendMethods = PrintConsoleMessage;
             sendMethods += SendSmsMessage;
-            
+
 
             adUserService.SendMessages(sendMethods);
 
@@ -40,16 +43,16 @@ namespace PasswordExpire
 
         static async void SendSmsMessage (User user)
         {
-            var response  = await _smsService.SendSmsAsync(user.Mobile, "Sveiki, iki jūsų paskyros užblokavimo liko 4 dienos. Kuo skubiau pasikeiskit slaptažodį.","CRAMO");
-            SaveLogFile(user.ToString());
-            SaveLogFile(string.Format("------ Message sent: {0}{1}",response.IsSucess,", error message: " + response.Message));
+            var response = await _smsService.SendSmsAsync (user.Mobile, _smsText, "CRAMO");// ("37069553298", _smsText, "CRAMO");//
+            SaveLogFile(user.ToString( ));
+            SaveLogFile(string.Format("------ Message sent: {0}{1}", response.IsSucess, ", error message: " + response.Message));
         }
 
         static async void SaveLogFile (string stringLine)
         {
             using (var file = new StreamWriter(_logFile, append: true))
             {
-                await file.WriteLineAsync( stringLine);
+                await file.WriteLineAsync(stringLine);
             }
         }
     }
