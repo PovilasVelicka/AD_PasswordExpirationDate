@@ -3,6 +3,7 @@ using BaltnetaSmsApi;
 using System;
 using System.Configuration;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace PasswordExpire
 {
@@ -26,13 +27,22 @@ namespace PasswordExpire
         }
         static void Main (string[ ] args)
         {
-            var adUserService = new AdUserService("LT_All Users");
+            Start( );
+        }
+        static  async void Start ()
+        {
+            var adUserService = new AdUserService();
 
             SendMessage sendMethods = PrintConsoleMessage;
             sendMethods += SendSmsMessage;
 
 
-            adUserService.SendMessages(sendMethods);
+            // adUserService.SendMessages(sendMethods);
+           var users = await adUserService.GetGroupUsersAsync("LT_All Users");
+            foreach(var user in users)
+            {
+                PrintConsoleMessage(user);
+            }
 
         }
 

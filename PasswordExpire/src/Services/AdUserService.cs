@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
+using System.Threading.Tasks;
 
 namespace PasswordExpire
 {
@@ -10,83 +12,95 @@ namespace PasswordExpire
     {
 
         private readonly PrincipalContext _context;
-        private readonly string _groupName;
 
-
-        public AdUserService (string groupName)
+        public AdUserService ( )
         {
-            _groupName = groupName;
             _context = new PrincipalContext(ContextType.Domain);
         }
 
-        public void SendMessages (SendMessage methods)
+        public async Task<IReadOnlyList<User>> GetGroupUsersAsync (string groupName)
         {
-            foreach (var groupMember in GetGroup(_groupName).Members)
+
+            var users = new List<User>( );
+            var groupTask =   GetGroupAsync(groupName);
+            
+            foreach (var groupMember in groupTask.Result.Members)
             {
-                var user = GetUser(groupMember.SamAccountName);
-                var expireDate = user.LastPasswordSet.GetValueOrDefault(DateTime.Now).AddMonths(2).AddDays(10).Date;
-              
-
-                if (expireDate == DateTime.Now.Date && user.Enabled == true)
-                {
-                    if (methods != null)
-                    {
-                        using (DirectoryEntry de = user.GetUnderlyingObject( ) as DirectoryEntry)
-                            if (de != null)
-                            {
-                                var mobile = de.Properties["mobile"].Value as string;
-
-                                if (!string.IsNullOrWhiteSpace(mobile))
-                                {
-                                    methods.Invoke(new User
-                                    {
-                                        guid = user.Guid,
-                                        FirstName = user.GivenName,
-                                        LastName = user.Surname,
-                                        Mobile = mobile,
-                                    });
-                                }
-                            }
-                    }
-                }
+                var user = await GetUserAsync(groupMember.SamAccountName);
+                // var expireDate = user.LastPasswordSet?.AddMonths(2).AddDays(10).Date;
+                users.Add(user);
             }
+            return users;
         }
 
-        private GroupPrincipal GetGroup (string groupName)
+        private  Task<GroupPrincipal> GetGroupAsync (string groupName)
         {
-            using (var userPrinciple = new GroupPrincipal(_context))
+            return Task<GroupPrincipal>.Run(( ) =>
             {
-                userPrinciple.SamAccountName = groupName;
-
-                using (var search = new PrincipalSearcher(userPrinciple))
+                using (var userPrinciple = new GroupPrincipal(_context))
                 {
-                    GroupPrincipal group = (GroupPrincipal)search.FindOne( );
+                    userPrinciple.SamAccountName = groupName;
 
-                    if (group == null)
+                    using (var search = new PrincipalSearcher(userPrinciple))
                     {
-                        throw new Exception("not found directory");
+                        GroupPrincipal group = (GroupPrincipal)search.FindOne( );
+
+                        if (group == null)
+                        {
+                            throw new Exception("not found directory");
+                        }
+                        return group;
                     }
-                    return group;
                 }
-            }
+            });
+
         }
 
-        private UserPrincipal GetUser (string userName)
+        private async Task<User> GetUserAsync (string userName)
         {
-            using (var userPrinciple = new UserPrincipal(_context))
-            {
-                userPrinciple.SamAccountName = userName;
-
-                using (var search = new PrincipalSearcher(userPrinciple))
+       
+                using (var userPrinciple = new UserPrincipal(_context))
                 {
-                    UserPrincipal user = (UserPrincipal)search.FindOne( );
-                    if (user == null)
+                    userPrinciple.SamAccountName = userName;
+
+                    using (var search = new PrincipalSearcher(userPrinciple))
                     {
-                        throw new Exception("user authenticated but not found in directory");
+                        UserPrincipal user = (UserPrincipal)search.FindOne( );
+
+                        if (user == null)
+                        {
+                            throw new Exception("user authenticated but not found in directory");
+                        }
+
+                        return new User
+                        {
+                            guid = user.Guid,
+                            FirstName = user.GivenName,
+                            LastName = user.Surname,
+                            Mobile = GetUserMobile(user),
+                            Enabled = user.Enabled ?? false,
+                            LastPasswordSet = user.LastPasswordSet,
+                            LastLogon = user.LastLogon,
+                            PasswordNewerExpire = user.PasswordNeverExpires,
+                        };
                     }
-                    return user;
                 }
+          
+        }
+
+        private string GetUserMobile(UserPrincipal user)
+        {
+
+            using (DirectoryEntry de = user.GetUnderlyingObject( ) as DirectoryEntry)
+            {
+                if (de != null)
+                {
+                    return de.Properties["mobile"].Value as string;
+
+                }
+                return "";
             }
+
         }
     }
 }
