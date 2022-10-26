@@ -29,7 +29,7 @@ namespace PasswordExpire
 
             if (!File.Exists(_reportFile))
             {
-                AppendLineToFile("Report date\tUser name\tMobile number\tLast passowrd set date\tEnabled\tSend sms", _reportFile);
+                AppendLineToFile("Report date\tUser name\tMobile number\tLast password set date\tEnabled\tSend sms", _reportFile);
             }
 
             _smsText = ConfigurationManager.AppSettings["smsMessage"];
@@ -81,9 +81,9 @@ namespace PasswordExpire
 
         static bool IsUserPassExpired (User user)
         {
-            var expireDate = user.LastPasswordSet?.AddMonths(2).AddDays(10).Date;
+            var expireDate = DateTime.Today.AddMonths(-2).AddDays(7).Date;
             return (
-                user.LastPasswordSet == expireDate
+                user.LastPasswordSet?.Date == expireDate
                 && !user.PasswordNewerExpire
                 && user.Enabled);
         }

@@ -14,7 +14,6 @@ namespace PasswordExpire
         public bool PasswordNewerExpire { get; set; }
         public override string ToString ( )
         {
-            var lines = ToCsvLine( ).Split('\t');
 
             return String.Format("Date: {0}, Name: {1}, Phone: {2}, LastPasswordSetDate: {3}, UserEnabled: {4}", ToCsvLine( ).Split('\t'));
         }
